@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Windows;
 using System.Windows.Threading;
+using System.Windows.Media.Imaging;
 using WPFMediaKit.DirectShow.MediaPlayers;
 
 namespace WPFMediaKit.DirectShow.Controls
@@ -244,6 +245,38 @@ namespace WPFMediaKit.DirectShow.Controls
         {
             var player = new MediaUriPlayer();
             return player;
+        }
+
+        public void SaveFrame(string fullname)
+        {
+            if (this.Source != null)
+            {
+                System.Windows.Interop.D3DImage img = this.CloneSingleFrameD3DImage();
+
+                int width = D3DImage.PixelWidth;
+                int height = D3DImage.PixelHeight;
+
+                System.Windows.Media.DrawingVisual dv = new System.Windows.Media.DrawingVisual();
+                using (System.Windows.Media.DrawingContext dc = dv.RenderOpen())
+                {
+                    dc.DrawImage(D3DImage, new Rect(0, 0, width, height));
+                }
+
+                RenderTargetBitmap rtb = new RenderTargetBitmap(width, height, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
+                rtb.Render(dv);
+
+                JpegBitmapEncoder encoder = new JpegBitmapEncoder();
+                Guid photoID = System.Guid.NewGuid();
+
+
+                encoder.Frames.Add(BitmapFrame.Create(BitmapFrame.Create(rtb)));
+
+                using (var filestream = new System.IO.FileStream(fullname, System.IO.FileMode.Create))
+                {
+                    encoder.Save(filestream);
+                }
+
+            }
         }
     }
 }
